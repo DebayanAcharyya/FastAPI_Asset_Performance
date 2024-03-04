@@ -49,6 +49,8 @@ async def identify_high_failure_rate_assets():
     
     high_failure_rate_assets = []
 
+    # For each asset, retrieve performance_metric_id and find high failure rate assets
+    
     for asset in assets:
         performance_metric_id = asset.get("performance_metric_id")
         if performance_metric_id:
