@@ -1,9 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends
-from models.schemas import PerformanceMetric, Asset, AssetCreate, AssetUpdate
+from fastapi.responses import JSONResponse
+from models.schemas import PerformanceMetric, Asset, AssetCreate, AssetUpdate, ResponseMessage
 from config.db import Database, close_database_client
 from typing import List
 from bson import ObjectId
 from motor.motor_asyncio import  AsyncIOMotorDatabase
+from pydantic import BaseModel
+from authentication.auth import get_current_user
+from models.user import UserOut
 
 asset = APIRouter() # Asset Router
 
@@ -11,11 +15,11 @@ asset = APIRouter() # Asset Router
 db: AsyncIOMotorDatabase = Database().db # type: ignore
 
 # Route for creating an asset with a performance metric reference
-@asset.post("/assets")
-async def create_asset(asset: AssetCreate):
+@asset.post("/assets", responses={200: {"model" : ResponseMessage}})
+async def create_asset(asset: AssetCreate, user: UserOut = Depends(get_current_user)):
     
     asset_data = asset.dict()
-    print(asset_data)
+    
     # Extract and remove the performance_metric field
     performance_metric_data = asset_data.pop("performance_metric")
     
@@ -26,7 +30,7 @@ async def create_asset(asset: AssetCreate):
     asset_data["performance_metric_id"] = performance_metric_id
     result = await db.assets.insert_one(asset_data)
     
-    return {"Asset added successfully"}
+    return JSONResponse(status_code=200, content={"detail" : "Asset added successfully"})
 
 
 # Get all assets with their respective performance metrics
@@ -40,17 +44,11 @@ async def get_all_assets():
     return assets
 
 async def get_performance_metrics_for_asset(metric_id):
-    #metrics = []
-    '''for metric_id in metric_ids:
-        metric = await db.performance_metrics.find_one({"_id": ObjectId(metric_id)})
-        if metric:
-            metrics.append(metric)'''
     metric = await db.performance_metrics.find_one({"_id": ObjectId(metric_id)})
-          
     return metric
 
 # Get a single asset by ID
-@asset.get("/assets/{asset_id}", response_model=Asset)
+@asset.get("/assets/{asset_id}", response_model=Asset, responses={404: {"model" : ResponseMessage}})
 async def get_asset(asset_id: str):
     asset = await db.assets.find_one({"_id": ObjectId(asset_id)})
     if asset:
@@ -59,10 +57,11 @@ async def get_asset(asset_id: str):
         return asset
     
     raise HTTPException(status_code=404, detail="Asset not found")
+    
 
 # Delete an asset
-@asset.delete("/assets/{asset_id}")
-async def delete_asset_endpoint(asset_id: str):
+@asset.delete("/assets/{asset_id}", responses={404: {"model" : ResponseMessage}, 200: {"model" : ResponseMessage}})
+async def delete_asset_endpoint(asset_id: str, user: UserOut = Depends(get_current_user)):
     # Delete the asset
     deleted_asset_data  = await db.assets.find_one_and_delete({"_id": ObjectId(asset_id)})
     
@@ -74,11 +73,11 @@ async def delete_asset_endpoint(asset_id: str):
     # Delete the associated performance metrics
     await db.performance_metrics.delete_one({"_id": ObjectId(metric_id)})
     
-    return {"message": "Asset and associated performance metrics deleted successfully"}
+    return JSONResponse(status_code=200, content={"detail" : "Asset and its associated metrics deleted successfully"})
 
 
-@asset.put("/assets/{asset_id}/update")
-async def update_asset(asset_id: str, asset_update: AssetUpdate):
+@asset.put("/assets/{asset_id}/update", responses={404: {"model" : ResponseMessage}, 200: {"model" : ResponseMessage}})
+async def update_asset(asset_id: str, asset_update: AssetUpdate, user: UserOut = Depends(get_current_user)):
     # Find the asset by ID
     existing_asset = await db.assets.find_one({"_id": ObjectId(asset_id)})
 
@@ -96,15 +95,5 @@ async def update_asset(asset_id: str, asset_update: AssetUpdate):
     # Save the updated document back to MongoDB
     await db.assets.replace_one({"_id": ObjectId(asset_id)}, existing_asset)
 
-    return {"message" : "Updated asset successfully"}
-
-
-
-
-
-
-
-
-
-
+    return JSONResponse(status_code=200, content={"detail" : "Asset details updated successfully"})
 

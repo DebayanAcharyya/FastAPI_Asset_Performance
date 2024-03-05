@@ -29,7 +29,7 @@ async def update_metric(asset_id: str, updated_metric: PerformanceMetric):
     return {"message" : "Updated performance metric successfully"}
 
 @performance.delete("/assets/{asset_id}/delete/performance_metric")
-async def update_metric(asset_id: str, metric : str):
+async def delete_metric(asset_id: str, metric : str):
     metric_id =  await db.assets.find_one({"_id": ObjectId(asset_id)}, projection={"performance_metric_id": 1})
     metric_id = metric_id["performance_metric_id"] if metric_id else None
 

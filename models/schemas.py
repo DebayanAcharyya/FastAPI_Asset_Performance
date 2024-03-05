@@ -36,6 +36,9 @@ class AssetUpdate(BaseModel):
     purchase_date: str = None
     initial_cost: float = None
     operational_status: str = None
+
+class ResponseMessage(BaseModel):
+    detail: str 
    
        
   
