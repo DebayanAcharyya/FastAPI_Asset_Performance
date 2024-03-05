@@ -20,7 +20,7 @@ async def calculate_average_downtime():
 
     if total_downtime:
         total_downtime = total_downtime[0]['total_downtime']
-        total_assets = await db.performance_metrics.count_documents({})
+        total_assets = await db.performance_metrics.count_documents({"downtime": {"$ne": None}})
         
         average_downtime = total_downtime / total_assets
         return average_downtime
