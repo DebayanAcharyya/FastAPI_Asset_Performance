@@ -1,14 +1,16 @@
-import os
 from datetime import datetime, timedelta
 from typing import Union, Any
 from jose import jwt
 from passlib.context import CryptContext
-
+from dotenv import dotenv_values
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
 REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
 ALGORITHM = "HS256"
-JWT_SECRET_KEY = os.environ['JWT_SECRET_KEY']   # should be kept secret
-JWT_REFRESH_SECRET_KEY = os.environ['JWT_REFRESH_SECRET_KEY']    # should be kept secret
+
+config = dotenv_values(".env")
+JWT_SECRET_KEY = config["JWT_SECRET_KEY"]
+JWT_REFRESH_SECRET_KEY = config["JWT_REFRESH_SECRET_KEY"]
+
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
